@@ -4,7 +4,7 @@ import "./style.css";
 interface Point {
   x: number;
   y: number;
-};
+}
 
 interface Line {
   points: Point[];
@@ -33,31 +33,34 @@ ctx.fillStyle = "white";
 const clearButton = document.createElement("button")!;
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+
   lines.splice(0, lines.length);
-  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+  redoStack.splice(0, redoStack.length);
+  paint_canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // adding undo button
 const undoButton = document.createElement("button")!;
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
-  redoStack.push(lines.pop()!);
-  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
-  redraw();
+  if (lines.length > 0) {
+    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+    redoStack.push(lines.pop()!);
+    ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+    redraw();
+  }
 });
 
 // adding redo button
 const redoButton = document.createElement("button")!;
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-  if (redoStack.length === 0) return;
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
-  lines.push(redoStack.pop()!);
-  redraw();
+  if (redoStack.length > 0) {
+    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+    lines.push(redoStack.pop()!);
+    redraw();
+  }
 });
-
 
 // adding elements to the app
 app.append(title);
@@ -66,8 +69,6 @@ app.append(toolbar_container);
 toolbar_container.append(clearButton);
 toolbar_container.append(undoButton);
 toolbar_container.append(redoButton);
-
-
 
 // canvas events
 paint_canvas.addEventListener("mousedown", (e) => {
