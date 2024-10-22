@@ -36,9 +36,7 @@ h1 {
 }
 
 canvas {
-  width: 256px;
-  height: 256px;
-  border: 5px solid #1e1e1f;
+  border: 3px solid #1e1e1f;
   border-radius: 5%;
   background-color: #f9f9f9;
 }
