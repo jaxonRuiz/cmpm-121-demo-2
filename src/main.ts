@@ -69,7 +69,7 @@ toolbar_container.append(redoButton);
 
 
 
-// events
+// canvas events
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
