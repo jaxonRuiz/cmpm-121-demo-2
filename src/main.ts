@@ -31,6 +31,7 @@ const clearButton = document.createElement("button")!;
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  lines.splice(0, lines.length);
   ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
 });
 
