@@ -82,7 +82,7 @@ export default function redraw() {
   for (const line of lines) {
     if (line.points.length > 1) {
       ctx.beginPath();
-      const { x, y } = line[0];
+      const { x, y } = line.points[0];
       ctx.moveTo(x, y);
       for (const { x, y } of line.points) {
         ctx.lineTo(x, y);
