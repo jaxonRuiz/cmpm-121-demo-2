@@ -20,6 +20,7 @@ title.innerHTML = APP_NAME;
 let currentLine: Point[] = [];
 const lines: Line[] = [];
 const cursor = { active: false, x: 0, y: 0 };
+const redoStack: Line[] = [];
 
 // setting up canvas
 const paint_canvas = document.createElement("canvas")!;
@@ -37,12 +38,34 @@ clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
 });
 
+// adding undo button
+const undoButton = document.createElement("button")!;
+undoButton.innerHTML = "Undo";
+undoButton.addEventListener("click", () => {
+  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  redoStack.push(lines.pop()!);
+  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+  redraw();
+});
+
+// adding redo button
+const redoButton = document.createElement("button")!;
+redoButton.innerHTML = "Redo";
+redoButton.addEventListener("click", () => {
+  if (redoStack.length === 0) return;
+  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  lines.push(redoStack.pop()!);
+  redraw();
+});
+
+
 // adding elements to the app
 app.append(title);
 app.append(paint_canvas);
 app.append(toolbar_container);
 toolbar_container.append(clearButton);
-
+toolbar_container.append(undoButton);
+toolbar_container.append(redoButton);
 
 
 
