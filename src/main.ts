@@ -21,7 +21,7 @@ clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
 });
 
-
+// adding elements to the app
 app.append(title);
 app.append(paint_canvas);
 app.append(toolbar_container);
@@ -47,6 +47,6 @@ paint_canvas.addEventListener("mousemove", (e) => {
   }
 });
 
-paint_canvas.addEventListener("mouseup", (e) => {
+paint_canvas.addEventListener("mouseup", () => {
   cursor.active = false;
 });
