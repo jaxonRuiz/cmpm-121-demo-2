@@ -49,7 +49,9 @@ const APP_NAME = "Paint World";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const title = document.createElement("h1")!;
 const toolbar_container = document.createElement("div")!;
+toolbar_container.classList.add("toolbar-container");
 const slider_container = document.createElement("div")!;
+slider_container.classList.add("slider-container");
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -64,6 +66,7 @@ ctx.fillStyle = "white";
 // adding clear button
 const clearButton = document.createElement("button")!;
 clearButton.innerHTML = "Clear";
+toolbar_container.append(clearButton);
 clearButton.addEventListener("click", () => {
   clearCommand();
 });
@@ -71,6 +74,7 @@ clearButton.addEventListener("click", () => {
 // adding undo button
 const undoButton = document.createElement("button")!;
 undoButton.innerHTML = "Undo";
+toolbar_container.append(undoButton);
 undoButton.addEventListener("click", () => {
   undoCommand();
 });
@@ -78,6 +82,7 @@ undoButton.addEventListener("click", () => {
 // adding redo button
 const redoButton = document.createElement("button")!;
 redoButton.innerHTML = "Redo";
+toolbar_container.append(redoButton);
 redoButton.addEventListener("click", () => {
   redoCommand();
 });
@@ -91,6 +96,7 @@ slider.min = "1";
 slider.max = "10";
 slider.value = lineWidth.toString();
 slider.classList.add("brush-slider");
+slider_container.append(slider);
 
 slider.oninput = () => {
   lineWidth = parseInt(slider.value);
@@ -101,20 +107,14 @@ slider.oninput = () => {
 app.append(title);
 app.append(paint_canvas);
 app.append(toolbar_container);
-toolbar_container.append(clearButton);
-toolbar_container.append(undoButton);
-toolbar_container.append(redoButton);
-toolbar_container.append(slider_container);
-slider_container.append(slider);
-slider_container.append(document.createElement("br"));
-slider_container.append(brushSizeLabel);
+app.append(slider_container);
+app.append(brushSizeLabel);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-
   currentLine = new LineCommand({ x: cursor.x, y: cursor.y }, lineWidth);
   commands.push(currentLine);
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
@@ -137,6 +137,8 @@ paint_canvas.addEventListener("drawing-changed", () => {
   console.log("Drawing changed");
   redrawCommand();
 });
+
+paint_canvas.addEventListener("tool-moved", () => {});
 
 // ================ Command Functions ================
 function undoCommand() {

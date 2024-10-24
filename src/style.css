@@ -47,6 +47,19 @@ canvas {
   color: "#646cff";
 }
 
+.toolbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1em;
+  border-radius: 5%;
+}
+
+.slider-container {
+  display: flex;
+  justify-content: center;
+}
+
 #app {
   max-width: 1280px;
   margin: 0 auto;
