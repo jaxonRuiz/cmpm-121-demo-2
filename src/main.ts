@@ -1,6 +1,6 @@
 import "./style.css";
 
-// ================ Interfaces and objects ================
+// ================ Interfaces and Objects ================
 interface Point {
   x: number;
   y: number;
