@@ -49,6 +49,7 @@ const APP_NAME = "Paint World";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const title = document.createElement("h1")!;
 const toolbar_container = document.createElement("div")!;
+const slider_container = document.createElement("div")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -83,6 +84,8 @@ redoButton.addEventListener("click", () => {
 
 // adding brush slider
 const slider = document.createElement("input");
+const brushSizeLabel = document.createElement("label");
+brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
 slider.type = "range";
 slider.min = "1";
 slider.max = "10";
@@ -91,7 +94,8 @@ slider.classList.add("brush-slider");
 
 slider.oninput = () => {
   lineWidth = parseInt(slider.value);
-}
+  brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
+};
 
 // adding elements to the app
 app.append(title);
@@ -100,7 +104,10 @@ app.append(toolbar_container);
 toolbar_container.append(clearButton);
 toolbar_container.append(undoButton);
 toolbar_container.append(redoButton);
-app.append(slider);
+toolbar_container.append(slider_container);
+slider_container.append(slider);
+slider_container.append(document.createElement("br"));
+slider_container.append(brushSizeLabel);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
