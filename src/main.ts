@@ -32,7 +32,6 @@ class LineCommand implements Displayable {
 }
 
 const commands: Displayable[] = [];
-const redoCommands = [];
 
 interface Line {
   points: Point[];
@@ -46,9 +45,8 @@ const toolbar_container = document.createElement("div")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 let currentLine: LineCommand;
-const lines: Line[] = [];
 const cursor = { active: false, x: 0, y: 0 };
-const redoStack: Line[] = [];
+const redoCommands: Displayable[] = [];
 
 // setting up canvas
 const paint_canvas = document.createElement("canvas")!;
@@ -61,8 +59,8 @@ ctx.fillStyle = "white";
 const clearButton = document.createElement("button")!;
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-  lines.splice(0, lines.length);
-  redoStack.splice(0, redoStack.length);
+  commands.splice(0, commands.length);
+  redoCommands.splice(0, redoCommands.length);
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
@@ -70,9 +68,9 @@ clearButton.addEventListener("click", () => {
 const undoButton = document.createElement("button")!;
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-  if (lines.length > 0) {
+  if (commands.length > 0) {
     paint_canvas.dispatchEvent(new Event("drawing-changed"));
-    redoStack.push(lines.pop()!);
+    redoCommands.push(commands.pop()!);
     ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
     redraw();
   }
@@ -82,9 +80,9 @@ undoButton.addEventListener("click", () => {
 const redoButton = document.createElement("button")!;
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-  if (redoStack.length > 0) {
+  if (redoCommands.length > 0) {
     paint_canvas.dispatchEvent(new Event("drawing-changed"));
-    lines.push(redoStack.pop()!);
+    commands.push(redoCommands.pop()!);
     redraw();
   }
 });
