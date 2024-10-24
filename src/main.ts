@@ -81,7 +81,7 @@ toolbar_container.append(clearButton);
 toolbar_container.append(undoButton);
 toolbar_container.append(redoButton);
 
-// canvas events
+// ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
@@ -107,16 +107,10 @@ paint_canvas.addEventListener("mouseup", () => {
 
 paint_canvas.addEventListener("drawing-changed", () => {
   console.log("Drawing changed");
-  redraw();
+  redrawCommand();
 });
 
-function redraw() {
-  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
-  for (const command of commands) {
-    command.draw(ctx);
-  }
-}
-
+// ================ Command Functions ================
 function undoCommand() {
   if (commands.length > 0) {
     redoCommands.push(commands.pop()!);
@@ -135,4 +129,11 @@ function clearCommand() {
   commands.splice(0, commands.length);
   redoCommands.splice(0, redoCommands.length);
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
+}
+
+function redrawCommand() {
+  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+  for (const command of commands) {
+    command.draw(ctx);
+  }
 }
