@@ -12,10 +12,16 @@ interface Displayable {
 
 // I tried SO hard to implement it without a class. im giving up on that though
 class LineCommand implements Displayable {
-  constructor(private points: Point[]) {}
+  private points: Point[];
+  private width: number;
+  constructor(start: Point, width: number) {
+    this.points = [start];
+    this.width = width;
+  }
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.points.length > 1) {
+      ctx.lineWidth = this.width;
       ctx.beginPath();
       const { x, y } = this.points[0];
       ctx.moveTo(x, y);
@@ -36,6 +42,7 @@ const commands: Displayable[] = [];
 let currentLine: LineCommand;
 const cursor = { active: false, x: 0, y: 0 };
 const redoCommands: Displayable[] = [];
+let lineWidth: number = 5;
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -50,6 +57,7 @@ const paint_canvas = document.createElement("canvas")!;
 const ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = 256;
 paint_canvas.height = 256;
+paint_canvas.style.cursor = "crosshair";
 ctx.fillStyle = "white";
 
 // adding clear button
@@ -73,6 +81,18 @@ redoButton.addEventListener("click", () => {
   redoCommand();
 });
 
+// adding brush slider
+const slider = document.createElement("input");
+slider.type = "range";
+slider.min = "1";
+slider.max = "10";
+slider.value = lineWidth.toString();
+slider.classList.add("brush-slider");
+
+slider.oninput = () => {
+  lineWidth = parseInt(slider.value);
+}
+
 // adding elements to the app
 app.append(title);
 app.append(paint_canvas);
@@ -80,6 +100,7 @@ app.append(toolbar_container);
 toolbar_container.append(clearButton);
 toolbar_container.append(undoButton);
 toolbar_container.append(redoButton);
+app.append(slider);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
@@ -87,7 +108,7 @@ paint_canvas.addEventListener("mousedown", (e) => {
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
 
-  currentLine = new LineCommand([{ x: cursor.x, y: cursor.y }]);
+  currentLine = new LineCommand({ x: cursor.x, y: cursor.y }, lineWidth);
   commands.push(currentLine);
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
 });
