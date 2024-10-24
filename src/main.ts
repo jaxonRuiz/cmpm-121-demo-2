@@ -37,12 +37,27 @@ class LineCommand implements Displayable {
   }
 }
 
+class CursorCommand implements Displayable {
+  public point: Point;
+  constructor(point: Point) {
+    this.point = point;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.font = "32px monospace";
+    ctx.fillStyle = "black";
+    ctx.fillText("*", this.point.x - 8, this.point.y + 16);
+  }
+}
+
 // initializing global variables
 const commands: Displayable[] = [];
 let currentLine: LineCommand;
-const cursor = { active: false, x: 0, y: 0 };
+let cursor: CursorCommand | null = null;
+let cursorActive: boolean = false;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
+const bus = new EventTarget();
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -60,7 +75,7 @@ const paint_canvas = document.createElement("canvas")!;
 const ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = 256;
 paint_canvas.height = 256;
-paint_canvas.style.cursor = "crosshair";
+paint_canvas.style.cursor = "none";
 ctx.fillStyle = "white";
 
 // adding clear button
@@ -112,58 +127,68 @@ app.append(brushSizeLabel);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
-  cursor.active = true;
-  cursor.x = e.offsetX;
-  cursor.y = e.offsetY;
-  currentLine = new LineCommand({ x: cursor.x, y: cursor.y }, lineWidth);
+  cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
+  cursorActive = true;
+  currentLine = new LineCommand(cursor.point, lineWidth);
   commands.push(currentLine);
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  bus.dispatchEvent(new Event("drawing-changed"));
 });
 
 paint_canvas.addEventListener("mousemove", (e) => {
-  if (cursor.active) {
-    cursor.x = e.offsetX;
-    cursor.y = e.offsetY;
-    currentLine.drag({ x: cursor.x, y: cursor.y });
-    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
+  if (cursorActive) {
+    currentLine.drag(cursor.point);
+    bus.dispatchEvent(new Event("drawing-changed"));
+  } else {
+    bus.dispatchEvent(new Event("tool-moved"));
   }
 });
 
 paint_canvas.addEventListener("mouseup", () => {
-  cursor.active = false;
+  cursorActive = false;
 });
 
-paint_canvas.addEventListener("drawing-changed", () => {
-  console.log("Drawing changed");
-  redrawCommand();
+paint_canvas.addEventListener("mouseenter", (e) => {
+  cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
+  bus.dispatchEvent(new Event("tool-moved"));
 });
 
-paint_canvas.addEventListener("tool-moved", () => {});
+paint_canvas.addEventListener("mouseleave", () => {
+  cursor = null;
+  bus.dispatchEvent(new Event("tool-moved"));
+});
+
+bus.addEventListener("drawing-changed", redrawCommand);
+bus.addEventListener("tool-moved", redrawCommand);
 
 // ================ Command Functions ================
 function undoCommand() {
   if (commands.length > 0) {
     redoCommands.push(commands.pop()!);
-    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+    bus.dispatchEvent(new Event("drawing-changed"));
   }
 }
 
 function redoCommand() {
   if (redoCommands.length > 0) {
     commands.push(redoCommands.pop()!);
-    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+    bus.dispatchEvent(new Event("drawing-changed"));
   }
 }
 
 function clearCommand() {
   commands.splice(0, commands.length);
   redoCommands.splice(0, redoCommands.length);
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  bus.dispatchEvent(new Event("drawing-changed"));
 }
 
 function redrawCommand() {
   ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
   for (const command of commands) {
     command.draw(ctx);
+  }
+
+  if (cursor && !cursorActive) {
+    cursor.draw(ctx);
   }
 }
