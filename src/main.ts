@@ -1,6 +1,6 @@
 import "./style.css";
 
-// Interfaces
+// ================ Interfaces and objects ================
 interface Point {
   x: number;
   y: number;
@@ -31,22 +31,19 @@ class LineCommand implements Displayable {
   }
 }
 
+// initializing global variables
 const commands: Displayable[] = [];
+let currentLine: LineCommand;
+const cursor = { active: false, x: 0, y: 0 };
+const redoCommands: Displayable[] = [];
 
-interface Line {
-  points: Point[];
-}
-
-// initializing variables
+// ================ DOM setup ================
 const APP_NAME = "Paint World";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const title = document.createElement("h1")!;
 const toolbar_container = document.createElement("div")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
-let currentLine: LineCommand;
-const cursor = { active: false, x: 0, y: 0 };
-const redoCommands: Displayable[] = [];
 
 // setting up canvas
 const paint_canvas = document.createElement("canvas")!;
@@ -59,32 +56,21 @@ ctx.fillStyle = "white";
 const clearButton = document.createElement("button")!;
 clearButton.innerHTML = "Clear";
 clearButton.addEventListener("click", () => {
-  commands.splice(0, commands.length);
-  redoCommands.splice(0, redoCommands.length);
-  paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  clearCommand();
 });
 
 // adding undo button
 const undoButton = document.createElement("button")!;
 undoButton.innerHTML = "Undo";
 undoButton.addEventListener("click", () => {
-  if (commands.length > 0) {
-    paint_canvas.dispatchEvent(new Event("drawing-changed"));
-    redoCommands.push(commands.pop()!);
-    ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
-    redraw();
-  }
+  undoCommand();
 });
 
 // adding redo button
 const redoButton = document.createElement("button")!;
 redoButton.innerHTML = "Redo";
 redoButton.addEventListener("click", () => {
-  if (redoCommands.length > 0) {
-    paint_canvas.dispatchEvent(new Event("drawing-changed"));
-    commands.push(redoCommands.pop()!);
-    redraw();
-  }
+  redoCommand();
 });
 
 // adding elements to the app
@@ -129,4 +115,24 @@ function redraw() {
   for (const command of commands) {
     command.draw(ctx);
   }
+}
+
+function undoCommand() {
+  if (commands.length > 0) {
+    redoCommands.push(commands.pop()!);
+    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  }
+}
+
+function redoCommand() {
+  if (redoCommands.length > 0) {
+    commands.push(redoCommands.pop()!);
+    paint_canvas.dispatchEvent(new Event("drawing-changed"));
+  }
+}
+
+function clearCommand() {
+  commands.splice(0, commands.length);
+  redoCommands.splice(0, redoCommands.length);
+  paint_canvas.dispatchEvent(new Event("drawing-changed"));
 }
