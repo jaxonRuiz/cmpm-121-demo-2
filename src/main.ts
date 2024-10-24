@@ -6,6 +6,34 @@ interface Point {
   y: number;
 }
 
+interface Displayable {
+  draw(ctx: CanvasRenderingContext2D): void;
+}
+
+// I tried SO hard to implement it without a class. im giving up on that though
+class LineCommand implements Displayable {
+  constructor(private points: Point[]) {}
+
+  draw(ctx: CanvasRenderingContext2D) {
+    if (this.points.length > 1) {
+      ctx.beginPath();
+      const { x, y } = this.points[0];
+      ctx.moveTo(x, y);
+      for (const { x, y } of this.points) {
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  drag(point: Point) {
+    this.points.push(point);
+  }
+}
+
+const commands: Displayable[] = [];
+const redoCommands = [];
+
 interface Line {
   points: Point[];
 }
@@ -17,7 +45,7 @@ const title = document.createElement("h1")!;
 const toolbar_container = document.createElement("div")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
-let currentLine: Point[] = [];
+let currentLine: LineCommand;
 const lines: Line[] = [];
 const cursor = { active: false, x: 0, y: 0 };
 const redoStack: Line[] = [];
@@ -74,9 +102,9 @@ paint_canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-  currentLine = [];
-  lines.push({ points: currentLine });
-  currentLine.push({ x: cursor.x, y: cursor.y });
+
+  currentLine = new LineCommand([{ x: cursor.x, y: cursor.y }]);
+  commands.push(currentLine);
   paint_canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
@@ -84,7 +112,7 @@ paint_canvas.addEventListener("mousemove", (e) => {
   if (cursor.active) {
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    currentLine.push({ x: cursor.x, y: cursor.y });
+    currentLine.drag({ x: cursor.x, y: cursor.y });
     paint_canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
@@ -100,15 +128,7 @@ paint_canvas.addEventListener("drawing-changed", () => {
 
 function redraw() {
   ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
-  for (const line of lines) {
-    if (line.points.length > 1) {
-      ctx.beginPath();
-      const { x, y } = line.points[0];
-      ctx.moveTo(x, y);
-      for (const { x, y } of line.points) {
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
+  for (const command of commands) {
+    command.draw(ctx);
   }
 }
