@@ -44,9 +44,11 @@ class CursorCommand implements Displayable {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.font = "32px monospace";
+    // ctx.font = "5px monospace";
+    // console.log(lineWidth.toString() + "px monospace");
     ctx.fillStyle = "black";
-    ctx.fillText("*", this.point.x - 8, this.point.y + 16);
+    // const offset = ctx.measureText("o").width / 2
+    ctx.fillText("o", this.point.x - fontOffset, this.point.y + fontOffset);
   }
 }
 
@@ -57,6 +59,8 @@ let cursor: CursorCommand | null = null;
 let cursorActive: boolean = false;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
+let fontSize: number = Math.floor(lineWidth * 3);
+let fontOffset: number = 4;
 const bus = new EventTarget();
 
 // ================ DOM setup ================
@@ -116,6 +120,10 @@ slider_container.append(slider);
 slider.oninput = () => {
   lineWidth = parseInt(slider.value);
   brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
+  fontSize = Math.floor(lineWidth * 3);
+  ctx.font = `${fontSize}px monospace`;
+  fontOffset = ctx.measureText("o").width / 2;
+  console.log(fontOffset);
 };
 
 // adding elements to the app
@@ -146,6 +154,7 @@ paint_canvas.addEventListener("mousemove", (e) => {
 
 paint_canvas.addEventListener("mouseup", () => {
   cursorActive = false;
+  bus.dispatchEvent(new Event("tool-moved"));
 });
 
 paint_canvas.addEventListener("mouseenter", (e) => {
