@@ -58,6 +58,7 @@ class StickerCommand implements Displayable {
 
     this.image = image;
     fontOffset = ctx.measureText(this.image).width / 2;
+    fontOffset = 0;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -89,7 +90,7 @@ const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
 const fontSize: number = 25;
 let fontOffset: number;
-const stickers = ["A", "B", "C"];
+const stickers = ["🌎", "🪐", "⭐️"];
 const bus = new EventTarget();
 
 // ================ DOM setup ================
@@ -153,7 +154,7 @@ function setupStickers() {
   customStickerButton.innerHTML = "Add Sticker";
   sticker_container.append(customStickerButton);
   customStickerButton.addEventListener("click", () => {
-    const stickerName = prompt("Enter sticker name:");
+    const stickerName = prompt("Enter sticker name:", ":D");
     if (stickerName) {
       stickers.push(stickerName);
       setupStickers();
