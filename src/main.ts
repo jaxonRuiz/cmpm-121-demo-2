@@ -44,7 +44,6 @@ class CursorCommand implements Displayable {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.ellipse(this.point.x, this.point.y, lineWidth/2, lineWidth/2, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -52,21 +51,23 @@ class CursorCommand implements Displayable {
 }
 
 class StickerCommand implements Displayable {
-  private point: Point;
+  private point?: Point;
   private image: string;
 
-  constructor(point: Point, image: string) {
-    this.point = point;
+  constructor( image: string) {
+
     this.image = image;
     fontOffset = ctx.measureText(this.image).width / 2;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillText(
-      this.image,
-      this.point.x - fontOffset,
-      this.point.y + fontOffset
-    );
+    if (this.point) {
+      ctx.fillText(
+        this.image,
+        this.point.x - fontOffset,
+        this.point.y + fontOffset
+      );
+    }
   }
 
   drag(point: Point) {
@@ -108,8 +109,8 @@ const paint_canvas = document.createElement("canvas")!;
 const ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = 256;
 paint_canvas.height = 256;
+ctx.fillStyle = "black";
 paint_canvas.style.cursor = "none";
-ctx.fillStyle = "white";
 
 // adding clear button
 const clearButton = document.createElement("button")!;
@@ -137,15 +138,29 @@ redoButton.addEventListener("click", () => {
 
 // adding sticker buttons
 ctx.font = `${fontSize}px Arial`;
-for (const sticker of stickers) {
-  const stickerButton = document.createElement("button");
-  stickerButton.innerHTML = sticker;
-  sticker_container.append(stickerButton);
-  stickerButton.addEventListener("click", () => {
-    currentSticker = new StickerCommand({ x: 0, y: 0 }, sticker);
-    bus.dispatchEvent(new Event("tool-moved"));
+function setupStickers() {
+  sticker_container.innerHTML = "";
+  for (const sticker of stickers) {
+    const stickerButton = document.createElement("button");
+    stickerButton.innerHTML = sticker;
+    sticker_container.append(stickerButton);
+    stickerButton.addEventListener("click", () => {
+      currentSticker = new StickerCommand(sticker);
+      bus.dispatchEvent(new Event("tool-moved"));
+    });
+  }
+  const customStickerButton = document.createElement("button"); 
+  customStickerButton.innerHTML = "Add Sticker";
+  sticker_container.append(customStickerButton);
+  customStickerButton.addEventListener("click", () => {
+    const stickerName = prompt("Enter sticker name:");
+    if (stickerName) {
+      stickers.push(stickerName);
+      setupStickers();
+    }
   });
 }
+setupStickers();
 
 // adding brush slider
 const slider = document.createElement("input");
