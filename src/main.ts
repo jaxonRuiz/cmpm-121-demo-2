@@ -84,7 +84,6 @@ const commands: Displayable[] = [];
 let currentLine: LineCommand | null = null;
 let cursor: CursorCommand | null = null;
 let currentSticker: StickerCommand | null = null;
-let cursorActive: boolean = false;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
 const fontSize: number = 25;
@@ -100,6 +99,7 @@ const toolbar_container = document.createElement("div")!;
 toolbar_container.classList.add("toolbar-container");
 const slider_container = document.createElement("div")!;
 slider_container.classList.add("slider-container");
+const sticker_container = document.createElement("div")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -140,7 +140,7 @@ ctx.font = `${fontSize}px Arial`;
 for (const sticker of stickers) {
   const stickerButton = document.createElement("button");
   stickerButton.innerHTML = sticker;
-  toolbar_container.append(stickerButton);
+  sticker_container.append(stickerButton);
   stickerButton.addEventListener("click", () => {
     currentSticker = new StickerCommand({ x: 0, y: 0 }, sticker);
     bus.dispatchEvent(new Event("tool-moved"));
@@ -166,13 +166,13 @@ slider.oninput = () => {
 app.append(title);
 app.append(paint_canvas);
 app.append(toolbar_container);
+app.append(sticker_container);
 app.append(slider_container);
 app.append(brushSizeLabel);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
-  cursorActive = true;
   if (currentSticker) {
     currentSticker.drag(cursor.point);
 
@@ -200,7 +200,6 @@ paint_canvas.addEventListener("mousemove", (e) => {
 
 paint_canvas.addEventListener("mouseup", () => {
   currentLine = null;
-  cursorActive = false;
   if (currentSticker) {
     commands.push(currentSticker);
     currentSticker = null;
@@ -215,6 +214,7 @@ paint_canvas.addEventListener("mouseenter", (e) => {
 
 paint_canvas.addEventListener("mouseleave", () => {
   cursor = null;
+  currentLine = null;
   bus.dispatchEvent(new Event("tool-moved"));
 });
 
@@ -250,7 +250,7 @@ function redrawCommand() {
 
   if (currentSticker) {
     currentSticker.draw(ctx);
-  } else if (cursor && !cursorActive) {
+  } else if (cursor && !currentLine) {
     cursor.draw(ctx);
   }
 }
