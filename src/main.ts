@@ -44,24 +44,50 @@ class CursorCommand implements Displayable {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    // ctx.font = "5px monospace";
-    // console.log(lineWidth.toString() + "px monospace");
     ctx.fillStyle = "black";
-    // const offset = ctx.measureText("o").width / 2
     ctx.fillText("o", this.point.x - fontOffset, this.point.y + fontOffset);
+  }
+}
+
+class StickerCommand implements Displayable {
+  private point: Point;
+  private image: string;
+  constructor(point: Point, image: string) {
+    this.point = point;
+    this.image = image;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.fillText(
+      this.image,
+      this.point.x - fontOffset,
+      this.point.y + fontOffset
+    );
+  }
+
+  drag(point: Point) {
+    this.point = point;
+    ctx.fillText(
+      this.image,
+      this.point.x - fontOffset,
+      this.point.y + fontOffset
+    );
   }
 }
 
 // initializing global variables
 const commands: Displayable[] = [];
-let currentLine: LineCommand;
+let currentLine: LineCommand | null = null;
 let cursor: CursorCommand | null = null;
+let currentSticker: StickerCommand | null = null;
 let cursorActive: boolean = false;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
 let fontSize: number = Math.floor(lineWidth * 3);
 let fontOffset: number = 4;
+const stickers = ["A", "B", "C"];
 const bus = new EventTarget();
+let hasSticker: boolean = false;
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -106,6 +132,17 @@ redoButton.addEventListener("click", () => {
   redoCommand();
 });
 
+for (const sticker of stickers) {
+  const stickerButton = document.createElement("button");
+  stickerButton.innerHTML = sticker;
+  toolbar_container.append(stickerButton);
+  stickerButton.addEventListener("click", () => {
+    hasSticker = true;
+    currentSticker = new StickerCommand({ x: 0, y: 0 }, sticker);
+    bus.dispatchEvent(new Event("tool-moved"));
+  });
+}
+
 // adding brush slider
 const slider = document.createElement("input");
 const brushSizeLabel = document.createElement("label");
@@ -137,15 +174,27 @@ app.append(brushSizeLabel);
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
   cursorActive = true;
-  currentLine = new LineCommand(cursor.point, lineWidth);
-  commands.push(currentLine);
-  bus.dispatchEvent(new Event("drawing-changed"));
+  if (currentSticker) {
+    currentSticker.draw(ctx);
+    commands.push(currentSticker);
+    currentSticker = null;
+    hasSticker = false;
+    bus.dispatchEvent(new Event("drawing-changed"));
+    return;
+  } else {
+    currentLine = new LineCommand(cursor.point, lineWidth);
+    commands.push(currentLine);
+    bus.dispatchEvent(new Event("drawing-changed"));
+  }
 });
 
 paint_canvas.addEventListener("mousemove", (e) => {
   cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
-  if (cursorActive) {
+  if (currentLine) {
     currentLine.drag(cursor.point);
+    bus.dispatchEvent(new Event("drawing-changed"));
+  } else if (currentSticker) {
+    currentSticker.drag(cursor.point);
     bus.dispatchEvent(new Event("drawing-changed"));
   } else {
     bus.dispatchEvent(new Event("tool-moved"));
@@ -153,6 +202,7 @@ paint_canvas.addEventListener("mousemove", (e) => {
 });
 
 paint_canvas.addEventListener("mouseup", () => {
+  currentLine = null;
   cursorActive = false;
   bus.dispatchEvent(new Event("tool-moved"));
 });
@@ -197,7 +247,9 @@ function redrawCommand() {
     command.draw(ctx);
   }
 
-  if (cursor && !cursorActive) {
+  if (currentSticker) {
+    currentSticker.draw(ctx);
+  } else if (cursor && !cursorActive) {
     cursor.draw(ctx);
   }
 }
