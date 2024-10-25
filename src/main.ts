@@ -58,7 +58,6 @@ class StickerCommand implements Displayable {
 
     this.image = image;
     fontOffset = ctx.measureText(this.image).width / 2;
-    fontOffset = 0;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -111,6 +110,7 @@ const ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = 256;
 paint_canvas.height = 256;
 ctx.fillStyle = "black";
+ctx.font = `${fontSize}px Arial`;
 paint_canvas.style.cursor = "none";
 
 // adding clear button
@@ -138,7 +138,6 @@ redoButton.addEventListener("click", () => {
 });
 
 // adding sticker buttons
-ctx.font = `${fontSize}px Arial`;
 function setupStickers() {
   sticker_container.innerHTML = "";
   for (const sticker of stickers) {
