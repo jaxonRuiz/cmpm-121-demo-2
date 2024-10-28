@@ -174,7 +174,7 @@ setupStickers();
 // adding brush slider
 const slider = document.createElement("input");
 const brushSizeLabel = document.createElement("label");
-brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
+brushSizeLabel.innerHTML = `Brush/Sticker Size: x${lineWidth}`;
 slider.type = "range";
 slider.min = "1";
 slider.max = "10";
@@ -188,6 +188,7 @@ slider.oninput = () => {
 
 // adding export button
 const exportButton = document.createElement("button");
+toolbar_container.append(exportButton);
 exportButton.innerHTML = "Export";
 exportButton.addEventListener("click", () => {
   const export_canvas = document.createElement("canvas")!;
@@ -212,8 +213,6 @@ app.append(toolbar_container);
 app.append(sticker_container);
 app.append(slider_container);
 app.append(brushSizeLabel);
-app.append(document.createElement("br"))
-app.append(exportButton);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
