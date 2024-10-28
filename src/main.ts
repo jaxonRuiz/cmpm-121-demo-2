@@ -93,7 +93,8 @@ let cursor: CursorCommand | null = null;
 let currentSticker: StickerCommand | null = null;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
-const fontScale: number = 15;
+const maxLineWidth: number = 20;
+const fontScale: number = 12;
 // let fontOffset: number;
 const stickers = ["🌎", "🪐", "⭐️"];
 const bus = new EventTarget();
@@ -177,13 +178,13 @@ const brushSizeLabel = document.createElement("label");
 brushSizeLabel.innerHTML = `Brush/Sticker Size: x${lineWidth}`;
 slider.type = "range";
 slider.min = "1";
-slider.max = "10";
-slider.value = lineWidth.toString();
+slider.max = "100";
+slider.value = (100*lineWidth/maxLineWidth).toString();
 slider.classList.add("brush-slider");
 slider_container.append(slider);
 slider.oninput = () => {
-  lineWidth = parseInt(slider.value);
-  brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
+  lineWidth = maxLineWidth*parseInt(slider.value)/100; // scale to maxLineWidth
+  brushSizeLabel.innerHTML = `Brush Size: x${lineWidth}`;
 };
 
 // adding export button
