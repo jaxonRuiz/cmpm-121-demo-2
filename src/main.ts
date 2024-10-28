@@ -54,19 +54,24 @@ class StickerCommand implements Displayable {
   private point?: Point;
   private image: string;
   private fontOffset: number;
+  private size;
 
-  constructor( image: string) {
-
+  constructor( image: string, size: number = fontScale*lineWidth) {
     this.image = image;
+    this.size = size;
+    ctx.font = `${this.size}px Arial`;
     this.fontOffset = ctx.measureText(this.image).width / 2;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.point) {
+      ctx.font = `${this.size}px Arial`;
+    this.fontOffset = ctx.measureText(this.image).width / 2;
+
       ctx.fillText(
         this.image,
         this.point.x - this.fontOffset,
-        this.point.y + this.fontOffset
+        this.point.y + this.fontOffset/2
       );
     }
   }
@@ -76,7 +81,7 @@ class StickerCommand implements Displayable {
     ctx.fillText(
       this.image,
       this.point.x - this.fontOffset,
-      this.point.y + this.fontOffset
+      this.point.y + this.fontOffset/2
     );
   }
 }
@@ -88,7 +93,7 @@ let cursor: CursorCommand | null = null;
 let currentSticker: StickerCommand | null = null;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
-const fontSize: number = 45;
+const fontScale: number = 15;
 // let fontOffset: number;
 const stickers = ["🌎", "🪐", "⭐️"];
 const bus = new EventTarget();
@@ -114,7 +119,7 @@ const ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = canvasWidth;
 paint_canvas.height = canvasHeight;
 ctx.fillStyle = "black";
-ctx.font = `${fontSize}px Arial`;
+ctx.font = `${fontScale}px Arial`;
 paint_canvas.style.cursor = "none";
 
 // adding clear button
