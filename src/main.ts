@@ -14,12 +14,15 @@ interface Displayable {
 class LineCommand implements Displayable {
   private points: Point[];
   private width: number;
+  private color: string;
   constructor(start: Point, width: number) {
     this.points = [start];
     this.width = width;
+    this.color = `hsl(${hue}, 100%, 50%)`;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    ctx.strokeStyle = this.color;
     if (this.points.length > 0) {
       ctx.lineWidth = this.width;
       ctx.beginPath();
@@ -45,6 +48,7 @@ class CursorCommand implements Displayable {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
+    ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     ctx.ellipse(this.point.x, this.point.y, lineWidth/2, lineWidth/2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -67,7 +71,7 @@ class StickerCommand implements Displayable {
     if (this.point) {
       ctx.font = `${this.size}px Arial`;
     this.fontOffset = ctx.measureText(this.image).width / 2;
-
+      
       ctx.fillText(
         this.image,
         this.point.x - this.fontOffset,
@@ -77,6 +81,7 @@ class StickerCommand implements Displayable {
   }
 
   drag(point: Point) {
+    // this.rotation += Math.PI / 180; // rotate 1 degree
     this.point = point;
     ctx.fillText(
       this.image,
@@ -111,6 +116,7 @@ toolbar_container.classList.add("toolbar-container");
 const slider_container = document.createElement("div")!;
 slider_container.classList.add("slider-container");
 const sticker_container = document.createElement("div")!;
+let hue: number = 0;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -173,18 +179,32 @@ function setupStickers() {
 setupStickers();
 
 // adding brush slider
-const slider = document.createElement("input");
+const scaleSlider = document.createElement("input");
 const brushSizeLabel = document.createElement("label");
 brushSizeLabel.innerHTML = `Brush/Sticker Size: x${lineWidth}`;
-slider.type = "range";
-slider.min = "1";
-slider.max = "100";
-slider.value = (100*lineWidth/maxLineWidth).toString();
-slider.classList.add("brush-slider");
-slider_container.append(slider);
-slider.oninput = () => {
-  lineWidth = maxLineWidth*parseInt(slider.value)/100; // scale to maxLineWidth
+scaleSlider.type = "range";
+scaleSlider.min = "1";
+scaleSlider.max = "100";
+scaleSlider.value = (100*lineWidth/maxLineWidth).toString();
+scaleSlider.classList.add("brush-slider");
+slider_container.append(scaleSlider);
+scaleSlider.oninput = () => {
+  lineWidth = maxLineWidth*parseInt(scaleSlider.value)/100; // scale to maxLineWidth
   brushSizeLabel.innerHTML = `Brush Size: x${lineWidth}`;
+};
+
+// adding hue slider
+const hueSlider = document.createElement("input");
+const hueLabel = document.createElement("label");
+hueLabel.innerHTML = `Hue: ${hue}`;
+hueSlider.type = "range";
+hueSlider.min = "0";
+hueSlider.max = "360";
+hueSlider.value = "0";
+hueSlider.classList.add("hue-slider");
+hueSlider.oninput = () => {
+  hue = parseInt(hueSlider.value);
+  hueLabel.innerHTML = `Hue: ${hue}`;
 };
 
 // adding export button
@@ -214,13 +234,16 @@ app.append(toolbar_container);
 app.append(sticker_container);
 app.append(slider_container);
 app.append(brushSizeLabel);
+app.append(document.createElement("br"));
+app.append(hueSlider);
+app.append(hueLabel);
+
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
   cursor = new CursorCommand({ x: e.offsetX, y: e.offsetY });
   if (currentSticker) {
     currentSticker.drag(cursor.point);
-
     bus.dispatchEvent(new Event("drawing-changed"));
   } else {
     currentLine = new LineCommand(cursor.point, lineWidth);
