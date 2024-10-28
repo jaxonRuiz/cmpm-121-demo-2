@@ -18,7 +18,7 @@ class LineCommand implements Displayable {
   constructor(start: Point, width: number) {
     this.points = [start];
     this.width = width;
-    this.color = `hsl(${hue}, 100%, 50%)`;
+    this.color = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -48,7 +48,7 @@ class CursorCommand implements Displayable {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
-    ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+    ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
     ctx.ellipse(this.point.x, this.point.y, lineWidth/2, lineWidth/2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -63,8 +63,8 @@ class StickerCommand implements Displayable {
   constructor( image: string, size: number = fontScale*lineWidth) {
     this.image = image;
     this.size = size;
-    ctx.font = `${this.size}px Arial`;
-    this.fontOffset = ctx.measureText(this.image).width / 2;
+    paint_ctx.font = `${this.size}px Arial`;
+    this.fontOffset = paint_ctx.measureText(this.image).width / 2;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -83,7 +83,7 @@ class StickerCommand implements Displayable {
   drag(point: Point) {
     // this.rotation += Math.PI / 180; // rotate 1 degree
     this.point = point;
-    ctx.fillText(
+    paint_ctx.fillText(
       this.image,
       this.point.x - this.fontOffset,
       this.point.y + this.fontOffset/2
@@ -106,6 +106,11 @@ const bus = new EventTarget();
 const canvasWidth = 256;
 const canvasHeight = 256;
 const exportScale = 4;
+let hue: number = 0;
+let saturation: number = 100;
+let darkness: number = 50;
+
+
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -116,17 +121,20 @@ toolbar_container.classList.add("toolbar-container");
 const slider_container = document.createElement("div")!;
 slider_container.classList.add("slider-container");
 const sticker_container = document.createElement("div")!;
-let hue: number = 0;
+const color_selector_container = document.createElement("div")!;
+color_selector_container.classList.add("color-selector-container");
+const color_selector = document.createElement("canvas")!;
+const darkness_selector = document.createElement("input")!;
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
 // setting up canvas
 const paint_canvas = document.createElement("canvas")!;
-const ctx = paint_canvas.getContext("2d")!;
+const paint_ctx = paint_canvas.getContext("2d")!;
 paint_canvas.width = canvasWidth;
 paint_canvas.height = canvasHeight;
-ctx.fillStyle = "black";
-ctx.font = `${fontScale}px Arial`;
+paint_ctx.fillStyle = "black";
+paint_ctx.font = `${fontScale}px Arial`;
 paint_canvas.style.cursor = "none";
 
 // adding clear button
@@ -151,6 +159,26 @@ redoButton.innerHTML = "Redo";
 toolbar_container.append(redoButton);
 redoButton.addEventListener("click", () => {
   redoCommand();
+});
+
+// adding export button
+const exportButton = document.createElement("button");
+toolbar_container.append(exportButton);
+exportButton.innerHTML = "Export";
+exportButton.addEventListener("click", () => {
+  const export_canvas = document.createElement("canvas")!;
+  export_canvas.width = canvasWidth * exportScale;
+  export_canvas.height = canvasHeight * exportScale;
+  const export_ctx = export_canvas.getContext("2d")!;
+  export_ctx.scale(exportScale, exportScale);
+
+  for (const command of commands) {
+    command.draw(export_ctx);
+  }
+  const link = document.createElement("a");
+  link.download = "image.png";
+  link.href = export_canvas.toDataURL();
+  link.click();
 });
 
 // adding sticker buttons
@@ -193,39 +221,48 @@ scaleSlider.oninput = () => {
   brushSizeLabel.innerHTML = `Brush Size: x${lineWidth}`;
 };
 
-// adding hue slider
-const hueSlider = document.createElement("input");
-const hueLabel = document.createElement("label");
-hueLabel.innerHTML = `Hue: ${hue}`;
-hueSlider.type = "range";
-hueSlider.min = "0";
-hueSlider.max = "360";
-hueSlider.value = "0";
-hueSlider.classList.add("hue-slider");
-hueSlider.oninput = () => {
-  hue = parseInt(hueSlider.value);
-  hueLabel.innerHTML = `Hue: ${hue}`;
+// adding color selector
+color_selector.width = 100;
+color_selector.height = 100;
+color_selector_container.append(color_selector);
+const color_ctx = color_selector.getContext("2d")!;
+
+color_selector.addEventListener("mousedown", (e) => {
+  drawColorSelector(e);
+});
+
+color_selector.addEventListener("mousemove", (e) => {
+  if (e.buttons) {
+    drawColorSelector(e);
+  }
+});
+
+// adding darkness slider
+darkness_selector.type = "range";
+darkness_selector.min = "0";
+darkness_selector.max = "100";
+darkness_selector.value = "50";
+darkness_selector.classList.add("darkness-slider");
+
+color_selector_container.append(darkness_selector);
+darkness_selector.oninput = () => {
+  darkness = parseInt(darkness_selector.value);
+  color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+
 };
 
-// adding export button
-const exportButton = document.createElement("button");
-toolbar_container.append(exportButton);
-exportButton.innerHTML = "Export";
-exportButton.addEventListener("click", () => {
-  const export_canvas = document.createElement("canvas")!;
-  export_canvas.width = canvasWidth * exportScale;
-  export_canvas.height = canvasHeight * exportScale;
-  const export_ctx = export_canvas.getContext("2d")!;
-  export_ctx.scale(exportScale, exportScale);
+function drawColorSelector(e: MouseEvent) {
+  hue = Math.floor((e.offsetX / color_selector.width) * 360);
+  saturation = Math.floor((e.offsetY / color_selector.height) * 100);
+  color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
 
-  for (const command of commands) {
-    command.draw(export_ctx);
-  }
-  const link = document.createElement("a");
-  link.download = "image.png";
-  link.href = export_canvas.toDataURL();
-  link.click();
-});
+  color_ctx.clearRect(0, 0, color_selector.width, color_selector.height);
+  color_ctx.beginPath();
+  color_ctx.rect(e.offsetX-5, e.offsetY-5, 10, 10);
+  color_ctx.fill();
+}
+
+
 
 // adding elements to the app
 app.append(title);
@@ -235,8 +272,8 @@ app.append(sticker_container);
 app.append(slider_container);
 app.append(brushSizeLabel);
 app.append(document.createElement("br"));
-app.append(hueSlider);
-app.append(hueLabel);
+app.append(document.createElement("br"));
+app.append(color_selector_container);
 
 
 // ================ Canvas Events ================
@@ -311,14 +348,14 @@ function clearCommand() {
 }
 
 function redrawCommand() {
-  ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+  paint_ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
   for (const command of commands) {
-    command.draw(ctx);
+    command.draw(paint_ctx);
   }
 
   if (currentSticker) {
-    currentSticker.draw(ctx);
+    currentSticker.draw(paint_ctx);
   } else if (cursor && !currentLine) {
-    cursor.draw(ctx);
+    cursor.draw(paint_ctx);
   }
 }
