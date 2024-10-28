@@ -91,6 +91,9 @@ const fontSize: number = 25;
 let fontOffset: number;
 const stickers = ["🌎", "🪐", "⭐️"];
 const bus = new EventTarget();
+const canvasWidth = 256;
+const canvasHeight = 256;
+const exportScale = 4;
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -107,8 +110,8 @@ title.innerHTML = APP_NAME;
 // setting up canvas
 const paint_canvas = document.createElement("canvas")!;
 const ctx = paint_canvas.getContext("2d")!;
-paint_canvas.width = 256;
-paint_canvas.height = 256;
+paint_canvas.width = canvasWidth;
+paint_canvas.height = canvasHeight;
 ctx.fillStyle = "black";
 ctx.font = `${fontSize}px Arial`;
 paint_canvas.style.cursor = "none";
@@ -177,6 +180,25 @@ slider.oninput = () => {
   brushSizeLabel.innerHTML = `Brush Size: ${lineWidth}`;
 };
 
+// adding export button
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "Export";
+exportButton.addEventListener("click", () => {
+  const export_canvas = document.createElement("canvas")!;
+  export_canvas.width = canvasWidth * exportScale;
+  export_canvas.height = canvasHeight * exportScale;
+  const export_ctx = export_canvas.getContext("2d")!;
+  export_ctx.scale(exportScale, exportScale);
+
+  for (const command of commands) {
+    command.draw(export_ctx);
+  }
+  const link = document.createElement("a");
+  link.download = "image.png";
+  link.href = export_canvas.toDataURL();
+  link.click();
+});
+
 // adding elements to the app
 app.append(title);
 app.append(paint_canvas);
@@ -184,6 +206,8 @@ app.append(toolbar_container);
 app.append(sticker_container);
 app.append(slider_container);
 app.append(brushSizeLabel);
+app.append(document.createElement("br"))
+app.append(exportButton);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
