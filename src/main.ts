@@ -53,19 +53,20 @@ class CursorCommand implements Displayable {
 class StickerCommand implements Displayable {
   private point?: Point;
   private image: string;
+  private fontOffset: number;
 
   constructor( image: string) {
 
     this.image = image;
-    fontOffset = ctx.measureText(this.image).width / 2;
+    this.fontOffset = ctx.measureText(this.image).width / 2;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
     if (this.point) {
       ctx.fillText(
         this.image,
-        this.point.x - fontOffset,
-        this.point.y + fontOffset
+        this.point.x - this.fontOffset,
+        this.point.y + this.fontOffset
       );
     }
   }
@@ -74,8 +75,8 @@ class StickerCommand implements Displayable {
     this.point = point;
     ctx.fillText(
       this.image,
-      this.point.x - fontOffset,
-      this.point.y + fontOffset
+      this.point.x - this.fontOffset,
+      this.point.y + this.fontOffset
     );
   }
 }
@@ -87,8 +88,8 @@ let cursor: CursorCommand | null = null;
 let currentSticker: StickerCommand | null = null;
 const redoCommands: Displayable[] = [];
 let lineWidth: number = 5;
-const fontSize: number = 25;
-let fontOffset: number;
+const fontSize: number = 45;
+// let fontOffset: number;
 const stickers = ["🌎", "🪐", "⭐️"];
 const bus = new EventTarget();
 const canvasWidth = 256;
