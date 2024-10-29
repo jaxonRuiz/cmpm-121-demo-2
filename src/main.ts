@@ -116,7 +116,8 @@ const canvasHeight = 256;
 const exportScale = 4;
 let hue: number = 0;
 let saturation: number = 100;
-let darkness: number = 50;
+let darkness: number = 50; // TODO rename to lightness, and all related functions
+const colorSelectorPoint: Point = { x: hue, y: saturation };
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -235,12 +236,16 @@ color_selector_container.append(color_selector);
 const color_ctx = color_selector.getContext("2d")!;
 
 color_selector.addEventListener("mousedown", (e) => {
-  drawColorSelector(e);
+  colorSelectorPoint.x = e.offsetX;
+  colorSelectorPoint.y = e.offsetY;
+  bus.dispatchEvent(new Event("hue-saturation-changed"));
 });
 
 color_selector.addEventListener("mousemove", (e) => {
   if (e.buttons) {
-    drawColorSelector(e);
+    colorSelectorPoint.x = e.offsetX;
+    colorSelectorPoint.y = e.offsetY;
+    bus.dispatchEvent(new Event("hue-saturation-changed"));
   }
 });
 
@@ -248,50 +253,21 @@ color_selector.addEventListener("mousemove", (e) => {
 darkness_selector.type = "range";
 darkness_selector.min = "0";
 darkness_selector.max = "100";
-darkness_selector.value = "50";
+darkness_selector.value = darkness.toString();
 darkness_selector.classList.add("darkness-slider");
 
 color_selector_container.append(darkness_selector);
 darkness_selector.oninput = () => {
   darkness = parseInt(darkness_selector.value);
   color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
-  updateColorDemo();
+  bus.dispatchEvent(new Event("darkness-changed"));
 };
-
-function drawColorSelector(e: MouseEvent) {
-  hue = Math.floor((e.offsetX / color_selector.width) * 360);
-  saturation = Math.floor((e.offsetY / color_selector.height) * 100);
-  color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
-  updateColorDemo();
-
-  color_ctx.clearRect(0, 0, color_selector.width, color_selector.height);
-  drawGradient();
-  color_ctx.beginPath();
-  color_ctx.rect(e.offsetX - 5, e.offsetY - 5, 10, 10);
-  color_ctx.stroke();
-};
-
-function drawGradient() {
-  for (let y = 0; y < color_selector.height; y++) {
-      for (let x = 0; x < color_selector.width; x++) {
-          const hue = (x / color_selector.width) * 360; // Hue ranges from 0 to 360
-          const saturation = (y / color_selector.height) * 100; // Saturation ranges from 0% to 100%
-          color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, 50%)`; // Set color (50% lightness)
-          color_ctx.fillRect(x, y, 1, 1); // Fill each pixel
-      }
-  }
-}
 
 // adding color demo
 color_demo.width = 100;
 color_demo.height = 100;
 color_demo.style.border = "1px solid black";
 color_selector_container.append(color_demo);
-function updateColorDemo() {
-  const color_demo_ctx = color_demo.getContext("2d")!;
-  color_demo_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
-  color_demo_ctx.fillRect(0, 0, color_demo.width, color_demo.height);
-}
 
 // adding elements to the app
 app.append(title);
@@ -353,6 +329,10 @@ paint_canvas.addEventListener("mouseleave", () => {
 
 bus.addEventListener("drawing-changed", redrawCommand);
 bus.addEventListener("tool-moved", redrawCommand);
+bus.addEventListener("darkness-changed", updateColorSelector);
+bus.addEventListener("hue-saturation-changed", updateColorSelector);
+
+updateColorSelector();
 
 // ================ Command Functions ================
 function undoCommand() {
@@ -386,4 +366,43 @@ function redrawCommand() {
   } else if (cursor && !currentLine) {
     cursor.draw(paint_ctx);
   }
+}
+
+function updateColorDemo() {
+  const color_demo_ctx = color_demo.getContext("2d")!;
+  color_demo_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+  color_demo_ctx.fillRect(0, 0, color_demo.width, color_demo.height);
+}
+
+function drawGradient() {
+  for (let y = 0; y < color_selector.height; y++) {
+    for (let x = 0; x < color_selector.width; x++) {
+      const hue = (x / color_selector.width) * 360;
+      const saturation = (y / color_selector.height) * 100;
+      color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, 50%)`;
+      color_ctx.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
+function drawColorSelector() {
+  const selectorSize = 10;
+  color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+  color_ctx.beginPath();
+  color_ctx.rect(
+    colorSelectorPoint.x - selectorSize / 2,
+    colorSelectorPoint.y - selectorSize / 2,
+    selectorSize,
+    selectorSize
+  );
+  color_ctx.stroke();
+}
+
+function updateColorSelector() {
+  hue = Math.floor((colorSelectorPoint.x / color_selector.width) * 360);
+  saturation = Math.floor((colorSelectorPoint.y / color_selector.height) * 100);
+
+  updateColorDemo();
+  drawGradient();
+  drawColorSelector();
 }
