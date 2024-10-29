@@ -49,7 +49,15 @@ class CursorCommand implements Displayable {
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
-    ctx.ellipse(this.point.x, this.point.y, lineWidth/2, lineWidth/2, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      this.point.x,
+      this.point.y,
+      lineWidth / 2,
+      lineWidth / 2,
+      0,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
   }
 }
@@ -60,7 +68,7 @@ class StickerCommand implements Displayable {
   private fontOffset: number;
   private size;
 
-  constructor( image: string, size: number = fontScale*lineWidth) {
+  constructor(image: string, size: number = fontScale * lineWidth) {
     this.image = image;
     this.size = size;
     paint_ctx.font = `${this.size}px Arial`;
@@ -70,12 +78,12 @@ class StickerCommand implements Displayable {
   draw(ctx: CanvasRenderingContext2D) {
     if (this.point) {
       ctx.font = `${this.size}px Arial`;
-    this.fontOffset = ctx.measureText(this.image).width / 2;
-      
+      this.fontOffset = ctx.measureText(this.image).width / 2;
+
       ctx.fillText(
         this.image,
         this.point.x - this.fontOffset,
-        this.point.y + this.fontOffset/2
+        this.point.y + this.fontOffset / 2
       );
     }
   }
@@ -86,7 +94,7 @@ class StickerCommand implements Displayable {
     paint_ctx.fillText(
       this.image,
       this.point.x - this.fontOffset,
-      this.point.y + this.fontOffset/2
+      this.point.y + this.fontOffset / 2
     );
   }
 }
@@ -110,8 +118,6 @@ let hue: number = 0;
 let saturation: number = 100;
 let darkness: number = 50;
 
-
-
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -125,6 +131,7 @@ const color_selector_container = document.createElement("div")!;
 color_selector_container.classList.add("color-selector-container");
 const color_selector = document.createElement("canvas")!;
 const darkness_selector = document.createElement("input")!;
+const color_demo = document.createElement("canvas");
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -193,7 +200,7 @@ function setupStickers() {
       bus.dispatchEvent(new Event("tool-moved"));
     });
   }
-  const customStickerButton = document.createElement("button"); 
+  const customStickerButton = document.createElement("button");
   customStickerButton.innerHTML = "Add Sticker";
   sticker_container.append(customStickerButton);
   customStickerButton.addEventListener("click", () => {
@@ -213,11 +220,11 @@ brushSizeLabel.innerHTML = `Brush/Sticker Size: x${lineWidth}`;
 scaleSlider.type = "range";
 scaleSlider.min = "1";
 scaleSlider.max = "100";
-scaleSlider.value = (100*lineWidth/maxLineWidth).toString();
+scaleSlider.value = ((100 * lineWidth) / maxLineWidth).toString();
 scaleSlider.classList.add("brush-slider");
 slider_container.append(scaleSlider);
 scaleSlider.oninput = () => {
-  lineWidth = maxLineWidth*parseInt(scaleSlider.value)/100; // scale to maxLineWidth
+  lineWidth = (maxLineWidth * parseInt(scaleSlider.value)) / 100; // scale to maxLineWidth
   brushSizeLabel.innerHTML = `Brush Size: x${lineWidth}`;
 };
 
@@ -248,21 +255,43 @@ color_selector_container.append(darkness_selector);
 darkness_selector.oninput = () => {
   darkness = parseInt(darkness_selector.value);
   color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
-
+  updateColorDemo();
 };
 
 function drawColorSelector(e: MouseEvent) {
   hue = Math.floor((e.offsetX / color_selector.width) * 360);
   saturation = Math.floor((e.offsetY / color_selector.height) * 100);
   color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+  updateColorDemo();
 
   color_ctx.clearRect(0, 0, color_selector.width, color_selector.height);
+  drawGradient();
   color_ctx.beginPath();
-  color_ctx.rect(e.offsetX-5, e.offsetY-5, 10, 10);
-  color_ctx.fill();
+  color_ctx.rect(e.offsetX - 5, e.offsetY - 5, 10, 10);
+  color_ctx.stroke();
+};
+
+function drawGradient() {
+  for (let y = 0; y < color_selector.height; y++) {
+      for (let x = 0; x < color_selector.width; x++) {
+          const hue = (x / color_selector.width) * 360; // Hue ranges from 0 to 360
+          const saturation = (y / color_selector.height) * 100; // Saturation ranges from 0% to 100%
+          color_ctx.fillStyle = `hsl(${hue}, ${saturation}%, 50%)`; // Set color (50% lightness)
+          color_ctx.fillRect(x, y, 1, 1); // Fill each pixel
+      }
+  }
 }
 
-
+// adding color demo
+color_demo.width = 100;
+color_demo.height = 100;
+color_demo.style.border = "1px solid black";
+color_selector_container.append(color_demo);
+function updateColorDemo() {
+  const color_demo_ctx = color_demo.getContext("2d")!;
+  color_demo_ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+  color_demo_ctx.fillRect(0, 0, color_demo.width, color_demo.height);
+}
 
 // adding elements to the app
 app.append(title);
@@ -274,7 +303,6 @@ app.append(brushSizeLabel);
 app.append(document.createElement("br"));
 app.append(document.createElement("br"));
 app.append(color_selector_container);
-
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
@@ -309,7 +337,7 @@ paint_canvas.addEventListener("mouseup", () => {
     commands.push(currentSticker);
     currentSticker = null;
   }
-  bus.dispatchEvent(new Event("tool-moved"));  
+  bus.dispatchEvent(new Event("tool-moved"));
 });
 
 paint_canvas.addEventListener("mouseenter", (e) => {
