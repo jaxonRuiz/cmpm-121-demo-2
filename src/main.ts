@@ -145,35 +145,10 @@ paint_ctx.fillStyle = "black";
 paint_ctx.font = `${fontScale}px Arial`;
 paint_canvas.style.cursor = "none";
 
-// adding clear button
-const clearButton = document.createElement("button")!;
-clearButton.innerHTML = "Clear";
-toolbar_container.append(clearButton);
-clearButton.addEventListener("click", () => {
-  clearCommand();
-});
+// ================ Toolbar Setup ================
 
-// adding undo button
-const undoButton = document.createElement("button")!;
-undoButton.innerHTML = "Undo";
-toolbar_container.append(undoButton);
-undoButton.addEventListener("click", () => {
-  undoCommand();
-});
-
-// adding redo button
-const redoButton = document.createElement("button")!;
-redoButton.innerHTML = "Redo";
-toolbar_container.append(redoButton);
-redoButton.addEventListener("click", () => {
-  redoCommand();
-});
-
-// adding export button
-const exportButton = document.createElement("button");
-toolbar_container.append(exportButton);
-exportButton.innerHTML = "Export";
-exportButton.addEventListener("click", () => {
+// export function
+function exportCanvas() {
   const export_canvas = document.createElement("canvas")!;
   export_canvas.width = canvasWidth * exportScale;
   export_canvas.height = canvasHeight * exportScale;
@@ -187,24 +162,41 @@ exportButton.addEventListener("click", () => {
   link.download = "image.png";
   link.href = export_canvas.toDataURL();
   link.click();
-});
+}
+
+// button setup function
+function setupButton(
+  name: string,
+  container: HTMLDivElement,
+  action: () => void
+) {
+  const button = document.createElement("button");
+  button.innerHTML = name;
+  container.append(button);
+  button.addEventListener("click", action);
+}
+
+// adding buttons
+const toolBarButtons = [
+  { name: "Clear", action: clearCommand, container: toolbar_container },
+  { name: "Undo", action: undoCommand, container: toolbar_container },
+  { name: "Redo", action: redoCommand, container: toolbar_container },
+  { name: "Export", action: exportCanvas, container: toolbar_container },
+];
+toolBarButtons.forEach(({ name, action, container }) =>
+  setupButton(name, container, action)
+);
 
 // adding sticker buttons
 function setupStickers() {
   sticker_container.innerHTML = "";
   for (const sticker of stickers) {
-    const stickerButton = document.createElement("button");
-    stickerButton.innerHTML = sticker;
-    sticker_container.append(stickerButton);
-    stickerButton.addEventListener("click", () => {
+    setupButton(sticker, sticker_container, () => {
       currentSticker = new StickerCommand(sticker);
       bus.dispatchEvent(new Event("tool-moved"));
     });
   }
-  const customStickerButton = document.createElement("button");
-  customStickerButton.innerHTML = "Add Sticker";
-  sticker_container.append(customStickerButton);
-  customStickerButton.addEventListener("click", () => {
+  setupButton("Add Sticker", sticker_container, () => {
     const stickerName = prompt("Enter sticker name:", ":D");
     if (stickerName) {
       stickers.push(stickerName);
