@@ -6,6 +6,11 @@ interface Point {
   y: number;
 }
 
+interface Color {
+  point: Point;
+  darkness: number;
+}
+
 interface Displayable {
   draw(ctx: CanvasRenderingContext2D): void;
 }
@@ -19,6 +24,7 @@ class LineCommand implements Displayable {
     this.points = [start];
     this.width = width;
     this.color = `hsl(${hue}, ${saturation}%, ${darkness}%)`;
+    console.log(this.color);
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -118,6 +124,7 @@ let hue: number = 0;
 let saturation: number = 100;
 let darkness: number = 50; // TODO rename to lightness, and all related functions
 const colorSelectorPoint: Point = { x: hue, y: saturation };
+const recentColors: Color[] = [];
 
 // ================ DOM setup ================
 const APP_NAME = "Paint World";
@@ -133,6 +140,7 @@ color_selector_container.classList.add("color-selector-container");
 const color_selector = document.createElement("canvas")!;
 const darkness_selector = document.createElement("input")!;
 const color_demo = document.createElement("canvas");
+const recently_used_colors = document.createElement("div");
 document.title = APP_NAME;
 title.innerHTML = APP_NAME;
 
@@ -271,6 +279,8 @@ app.append(brushSizeLabel);
 app.append(document.createElement("br"));
 app.append(document.createElement("br"));
 app.append(color_selector_container);
+app.append(document.createElement("br"));
+app.append(recently_used_colors);
 
 // ================ Canvas Events ================
 paint_canvas.addEventListener("mousedown", (e) => {
@@ -320,6 +330,7 @@ paint_canvas.addEventListener("mouseleave", () => {
 });
 
 bus.addEventListener("drawing-changed", redrawCommand);
+bus.addEventListener("drawing-changed", updateRecentlyUsedColors);
 bus.addEventListener("tool-moved", redrawCommand);
 bus.addEventListener("darkness-changed", updateColorSelector);
 bus.addEventListener("hue-saturation-changed", updateColorSelector);
@@ -391,10 +402,80 @@ function drawColorSelector() {
 }
 
 function updateColorSelector() {
-  hue = Math.floor((colorSelectorPoint.x / color_selector.width) * 360);
-  saturation = Math.floor((colorSelectorPoint.y / color_selector.height) * 100);
+  [hue, saturation] = calcColor(colorSelectorPoint);
 
   updateColorDemo();
   drawGradient();
   drawColorSelector();
+}
+
+function createColorUI(clr: Color) {
+  const color_box = document.createElement("canvas");
+  color_box.width = color_box.height = 20;
+
+  const color_box_ctx = color_box.getContext("2d")!;
+  const [h, s] = calcColor(clr.point);
+  color_box_ctx.fillStyle = `hsl(${h}, ${s}%, ${clr.darkness}%)`;
+  color_box_ctx.fillRect(0, 0, color_box.width, color_box.height);
+
+  color_box.addEventListener("click", () => {
+    colorSelectorPoint.x = clr.point.x;
+    colorSelectorPoint.y = clr.point.y;
+    bus.dispatchEvent(new Event("hue-saturation-changed"));
+    // bus.dispatchEvent(new Event("darkness-changed"));
+    // darkness-changed doesn't update the UI...
+    darkness_selector.value = clr.darkness.toString();
+  });
+
+  return color_box;
+}
+
+function updateRecentlyUsedColors() {
+  if (currentSticker !== null) return;
+
+  // if color already exists
+  if (
+    recentColors.some((color) =>
+      compare({ point: { ...colorSelectorPoint }, darkness }, color)
+    )
+  ) {
+    recentColors.splice(
+      recentColors.findIndex((color) =>
+        compare({ point: { ...colorSelectorPoint }, darkness }, color)
+      ),
+      1
+    );
+    recentColors.unshift({ point: { ...colorSelectorPoint }, darkness });
+  } else if (
+    recentColors.length === 0 ||
+    !compare({ point: { ...colorSelectorPoint }, darkness }, recentColors[0])
+  ) {
+    recentColors.unshift({ point: { ...colorSelectorPoint }, darkness });
+  }
+
+  // cap at 10 recent colors
+  if (recentColors.length > 10) {
+    recentColors.pop();
+  }
+
+  recently_used_colors.innerHTML = "";
+  recentColors.forEach((color) => {
+    recently_used_colors.append(createColorUI(color));
+  });
+}
+
+// ================ utility functions ================
+function calcColor(point: Point) {
+  return [
+    Math.floor((point.x / color_selector.width) * 360),
+    Math.floor((point.y / color_selector.height) * 100),
+  ];
+}
+
+function compare(a: Color, b: Color) {
+  return (
+    a.point.x === b.point.x &&
+    a.point.y === b.point.y &&
+    a.darkness === b.darkness
+  );
 }
